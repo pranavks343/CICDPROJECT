@@ -7,6 +7,16 @@ const DoctorVisitForm = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [patients, setPatients] = useState([]);
+  const [showNewPatientForm, setShowNewPatientForm] = useState(false);
+  const [newPatientData, setNewPatientData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    phoneNumber: '',
+    gender: '',
+    dateOfBirth: '',
+    address: '',
+  });
   const [formData, setFormData] = useState({
     patientId: '',
     visitDate: new Date().toISOString().slice(0, 16),
@@ -34,6 +44,37 @@ const DoctorVisitForm = () => {
       setPatients(response.data);
     } catch (error) {
       console.error('Error fetching patients:', error);
+    }
+  };
+
+  const handleCreateNewPatient = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await axiosClient.post('/users', {
+        ...newPatientData,
+        role: 'PATIENT',
+      });
+      
+      // Add new patient to the list and select them
+      await fetchPatients();
+      setFormData({ ...formData, patientId: response.data.id });
+      setShowNewPatientForm(false);
+      setNewPatientData({
+        fullName: '',
+        email: '',
+        password: '',
+        phoneNumber: '',
+        gender: '',
+        dateOfBirth: '',
+        address: '',
+      });
+      setError('');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create patient');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -71,19 +112,113 @@ const DoctorVisitForm = () => {
       <div className="card">
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Patient *</label>
-            <select
-              value={formData.patientId}
-              onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-              required
-            >
-              <option value="">Select Patient</option>
-              {patients.map((patient) => (
-                <option key={patient.id} value={patient.id}>
-                  {patient.fullName} ({patient.email})
-                </option>
-              ))}
-            </select>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+              <label>Patient *</label>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ fontSize: '0.9em', padding: '5px 15px' }}
+                onClick={() => setShowNewPatientForm(!showNewPatientForm)}
+              >
+                {showNewPatientForm ? 'Cancel' : '+ Add New Patient'}
+              </button>
+            </div>
+            
+            {!showNewPatientForm ? (
+              <select
+                value={formData.patientId}
+                onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                required
+              >
+                <option value="">Select Patient</option>
+                {patients.map((patient) => (
+                  <option key={patient.id} value={patient.id}>
+                    {patient.fullName} ({patient.email})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '5px', backgroundColor: '#f9f9f9' }}>
+                <h3 style={{ marginTop: 0 }}>Create New Patient</h3>
+                <div className="form-group">
+                  <label>Full Name *</label>
+                  <input
+                    type="text"
+                    value={newPatientData.fullName}
+                    onChange={(e) => setNewPatientData({ ...newPatientData, fullName: e.target.value })}
+                    placeholder="Enter patient name"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Email *</label>
+                  <input
+                    type="email"
+                    value={newPatientData.email}
+                    onChange={(e) => setNewPatientData({ ...newPatientData, email: e.target.value })}
+                    placeholder="patient@example.com"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Password *</label>
+                  <input
+                    type="password"
+                    value={newPatientData.password}
+                    onChange={(e) => setNewPatientData({ ...newPatientData, password: e.target.value })}
+                    placeholder="Minimum 6 characters"
+                    required
+                    minLength="6"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Phone Number</label>
+                  <input
+                    type="text"
+                    value={newPatientData.phoneNumber}
+                    onChange={(e) => setNewPatientData({ ...newPatientData, phoneNumber: e.target.value })}
+                    placeholder="Phone number"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Gender</label>
+                  <select
+                    value={newPatientData.gender}
+                    onChange={(e) => setNewPatientData({ ...newPatientData, gender: e.target.value })}
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Date of Birth</label>
+                  <input
+                    type="date"
+                    value={newPatientData.dateOfBirth}
+                    onChange={(e) => setNewPatientData({ ...newPatientData, dateOfBirth: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Address</label>
+                  <textarea
+                    value={newPatientData.address}
+                    onChange={(e) => setNewPatientData({ ...newPatientData, address: e.target.value })}
+                    placeholder="Patient address"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  onClick={handleCreateNewPatient}
+                  disabled={loading || !newPatientData.fullName || !newPatientData.email || !newPatientData.password}
+                  style={{ width: '100%' }}
+                >
+                  {loading ? 'Creating Patient...' : 'Create Patient & Continue'}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="form-group">

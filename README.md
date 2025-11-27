@@ -1,13 +1,13 @@
-# Health Records Management System
+# Healthcare Records Management System
 
-A complete full-stack college project for managing health records with separate dashboards for Admin, Doctor, and Patient roles.
+A complete full-stack application for managing healthcare records with CI/CD pipeline, containerization, and Kubernetes deployment. Features separate dashboards for Admin, Doctor, and Patient roles.
 
-## Tech Stack
+## 🚀 Tech Stack
 
 ### Backend
 - Spring Boot 3.2.0
 - Java 17
-- MySQL
+- PostgreSQL
 - Maven
 - Spring Data JPA
 - Swagger/OpenAPI
@@ -19,97 +19,166 @@ A complete full-stack college project for managing health records with separate 
 - Axios
 - Context API
 
-## Project Structure
+### DevOps & Infrastructure
+- **Docker** - Containerization
+- **Docker Compose** - Local development
+- **Kubernetes** - Container orchestration
+- **GitHub Actions** - CI/CD pipeline
+- **Ansible** - Configuration management
+- **Prometheus & Grafana** - Monitoring
+- **Nginx** - Reverse proxy
+
+## 📁 Project Structure
 
 ```
 CICDENDSEMHACKATHON/
-├── backend/                 # Spring Boot backend
+├── backend/                     # Spring Boot backend
 │   ├── src/
 │   │   └── main/
 │   │       ├── java/com/healthrecords/
-│   │       │   ├── entity/         # JPA entities
-│   │       │   ├── repository/     # Data repositories
-│   │       │   ├── service/        # Business logic
-│   │       │   ├── controller/     # REST controllers
-│   │       │   ├── dto/            # Data Transfer Objects
-│   │       │   ├── exception/      # Exception handling
-│   │       │   └── config/         # Configuration
+│   │       │   ├── entity/             # JPA entities
+│   │       │   ├── repository/         # Data repositories
+│   │       │   ├── service/            # Business logic
+│   │       │   ├── controller/         # REST controllers
+│   │       │   ├── dto/                # Data Transfer Objects
+│   │       │   ├── exception/          # Exception handling
+│   │       │   └── config/             # Configuration
 │   │       └── resources/
 │   │           └── application.properties
+│   ├── Dockerfile                      # Backend Docker image
 │   └── pom.xml
 │
-└── frontend/                # React frontend
-    ├── src/
-    │   ├── api/            # API client
-    │   ├── context/        # Auth context
-    │   ├── components/     # Reusable components
-    │   ├── pages/          # Page components
-    │   ├── App.jsx
-    │   └── main.jsx
-    ├── package.json
-    └── vite.config.js
+├── frontend/                    # React frontend
+│   ├── src/
+│   │   ├── api/                # API client
+│   │   ├── context/            # Auth context
+│   │   ├── components/         # Reusable components
+│   │   ├── pages/              # Page components
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   ├── Dockerfile              # Frontend Docker image
+│   ├── nginx.conf              # Nginx configuration
+│   ├── package.json
+│   └── vite.config.js
+│
+├── k8s/                        # Kubernetes manifests
+│   ├── namespace.yaml
+│   ├── configmap.yaml
+│   ├── secrets.yaml
+│   ├── postgres-deployment.yaml
+│   ├── backend-deployment.yaml
+│   ├── frontend-deployment.yaml
+│   └── ingress.yaml
+│
+├── ansible/                    # Ansible automation
+│   ├── site.yml                # Main playbook
+│   ├── deploy.yml              # Quick deployment
+│   ├── rollback.yml            # Rollback playbook
+│   ├── inventory.yml           # Inventory file
+│   └── roles/                  # Ansible roles
+│       ├── common/
+│       ├── kubernetes/
+│       └── monitoring/
+│
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml           # GitHub Actions pipeline
+│
+├── docker-compose.yml          # Local development
+├── Makefile                    # Automation commands
+├── DEPLOYMENT.md               # Deployment guide
+├── CICD-SETUP.md              # CI/CD setup guide
+└── README.md
 ```
 
-## Prerequisites
+## 📋 Prerequisites
 
+### For Local Development
 - Java 17 or higher
 - Maven 3.6+
-- Node.js 16+ and npm
-- MySQL 8.0+
-- IDE (IntelliJ IDEA, Eclipse, or VS Code)
+- Node.js 18+ and npm
+- PostgreSQL 15+
+- Docker 20.10+
+- Docker Compose 2.0+
 
-## Setup Instructions
+### For Full Deployment
+- Kubernetes cluster (1.28+)
+- kubectl
+- Helm 3.x
+- Ansible 2.14+
+- Docker Hub account
+- GitHub account
 
-### 1. Database Setup
+## 🚀 Quick Start
 
-1. Create MySQL database:
+### Option 1: Docker Compose (Recommended for Local Development)
+
+```bash
+# Start all services
+docker-compose up -d
+
+# Access the application
+# Frontend: http://localhost
+# Backend: http://localhost:8080
+# Database: localhost:5432
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+### Option 2: Traditional Setup
+
+#### 1. Database Setup
+
+Create PostgreSQL database:
 ```sql
-CREATE DATABASE health_records_db;
+CREATE DATABASE healthrecords;
+CREATE USER healthuser WITH PASSWORD 'healthpass123';
+GRANT ALL PRIVILEGES ON DATABASE healthrecords TO healthuser;
 ```
 
-2. Update database credentials in `backend/src/main/resources/application.properties`:
-```properties
-spring.datasource.username=root
-spring.datasource.password=your_password
-```
+Update database credentials in `backend/src/main/resources/application.properties` if needed.
 
-### 2. Backend Setup
+#### 2. Backend Setup
 
-1. Navigate to backend directory:
 ```bash
 cd backend
-```
-
-2. Run the Spring Boot application:
-```bash
 mvn spring-boot:run
 ```
 
-The backend will start on `http://localhost:8081`
+Backend will start on `http://localhost:8080`
 
-3. Access Swagger UI at:
-```
-http://localhost:8081/swagger-ui/index.html
-```
+#### 3. Frontend Setup
 
-### 3. Frontend Setup
-
-1. Navigate to frontend directory:
 ```bash
 cd frontend
-```
-
-2. Install dependencies:
-```bash
 npm install
-```
-
-3. Start the development server:
-```bash
 npm run dev
 ```
 
-The frontend will start on `http://localhost:3001`
+Frontend will start on `http://localhost:3000`
+
+### Option 3: Using Makefile
+
+```bash
+# Install dependencies
+make local-dev
+
+# Start backend
+make dev-backend
+
+# Start frontend (in another terminal)
+make dev-frontend
+
+# Run tests
+make test
+
+# Build everything
+make build
+```
 
 ## Default Login Credentials
 
@@ -198,21 +267,159 @@ The system automatically creates default users on first startup:
 - Ensure backend is running before starting frontend
 - Check browser console for CORS errors
 
-## Development
+## 🐳 Docker Deployment
 
-### Running Backend Tests
+### Build Docker Images
+
 ```bash
-cd backend
-mvn test
+# Build both images
+make docker-build DOCKER_USERNAME=your_username
+
+# Or manually
+docker build -t your_username/healthcare-backend:latest ./backend
+docker build -t your_username/healthcare-frontend:latest ./frontend
 ```
 
-### Building Frontend for Production
+### Push to Docker Hub
+
 ```bash
-cd frontend
-npm run build
+docker login
+make docker-push DOCKER_USERNAME=your_username
 ```
 
-## License
+## ☸️ Kubernetes Deployment
 
-This is a college project for educational purposes.
+### Deploy to Kubernetes
+
+```bash
+# Deploy all resources
+make k8s-deploy
+
+# Check status
+make k8s-status
+
+# View logs
+make k8s-logs-backend
+make k8s-logs-frontend
+
+# Access application
+kubectl port-forward -n healthcare svc/frontend-service 8080:80
+```
+
+### Using Ansible
+
+```bash
+# Full deployment
+make ansible-deploy
+
+# Quick update
+make ansible-quick-deploy
+
+# Rollback
+make ansible-rollback
+```
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md)
+
+## 🔄 CI/CD Pipeline
+
+This project includes a complete GitHub Actions CI/CD pipeline that:
+
+1. ✅ Tests backend and frontend code
+2. 🐳 Builds Docker images
+3. 📤 Pushes images to Docker Hub
+4. ☸️ Deploys to Kubernetes
+5. 🤖 Runs Ansible automation
+
+### Setup CI/CD
+
+1. Fork/clone this repository
+2. Add GitHub Secrets:
+   - `DOCKER_HUB_USERNAME`
+   - `DOCKER_HUB_TOKEN`
+   - `KUBE_CONFIG` (base64 encoded)
+3. Push to `main` branch to trigger pipeline
+
+For detailed CI/CD setup, see [CICD-SETUP.md](CICD-SETUP.md)
+
+## 📊 Monitoring
+
+### Setup Monitoring Stack
+
+```bash
+make monitor-setup
+```
+
+### Access Monitoring Tools
+
+```bash
+# Port forward Grafana
+make monitor-port-forward
+
+# Access Grafana at http://localhost:3000
+# Username: admin
+# Password: admin123
+```
+
+## 🛠️ Available Make Commands
+
+```bash
+make help                    # Show all available commands
+make local-dev              # Setup local development
+make test                   # Run all tests
+make build                  # Build backend and frontend
+make docker-build           # Build Docker images
+make docker-push            # Push images to Docker Hub
+make k8s-deploy             # Deploy to Kubernetes
+make k8s-status             # Check deployment status
+make ansible-deploy         # Deploy using Ansible
+make monitor-setup          # Setup monitoring
+make clean                  # Clean build files
+```
+
+## 🔧 Development
+
+### Running Tests
+
+```bash
+# Backend tests
+make test-backend
+
+# Frontend tests
+make test-frontend
+
+# All tests
+make test
+```
+
+### Building for Production
+
+```bash
+# Build backend
+make build-backend
+
+# Build frontend
+make build-frontend
+
+# Build both
+make build
+```
+
+## 📚 Documentation
+
+- [Deployment Guide](DEPLOYMENT.md) - Complete deployment instructions
+- [CI/CD Setup Guide](CICD-SETUP.md) - CI/CD configuration and setup
+- [Makefile](Makefile) - All available automation commands
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## 📝 License
+
+This project is for educational purposes as part of a CI/CD demonstration.
 

@@ -1,0 +1,152 @@
+---
+# Main playbook for Healthcare Records System deployment
+- name: Deploy Healthcare Records System
+  hosts: all
+  gather_facts: yes
+  become: yes
+  
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+    
+    - name: Ensure required packages are installed
+      package:
+        name:
+          - curl
+          - wget
+          - git
+          - vim
+          - htop
+        state: present
+
+  roles:
+    - common
+
+- name: Configure Kubernetes Cluster
+  hosts: kubernetes
+  gather_facts: yes
+  become: yes
+  
+  roles:
+    - kubernetes
+
+- name: Deploy Application to Kubernetes
+  hosts: master
+  gather_facts: yes
+  become: yes
+  
+  tasks:
+    - name: Create namespace
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', '../k8s/namespace.yaml') }}"
+    
+    - name: Apply ConfigMaps
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', '../k8s/configmap.yaml') }}"
+    
+    - name: Apply Secrets
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', '../k8s/secrets.yaml') }}"
+    
+    - name: Deploy PostgreSQL
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', '../k8s/postgres-deployment.yaml') }}"
+    
+    - name: Wait for PostgreSQL to be ready
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: healthcare
+        label_selectors:
+          - app=postgres
+        wait: yes
+        wait_condition:
+          type: Ready
+          status: "True"
+        wait_timeout: 300
+    
+    - name: Deploy Backend
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', '../k8s/backend-deployment.yaml') }}"
+    
+    - name: Wait for Backend to be ready
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        name: backend-deployment
+        namespace: healthcare
+        wait: yes
+        wait_condition:
+          type: Available
+          status: "True"
+        wait_timeout: 300
+    
+    - name: Deploy Frontend
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', '../k8s/frontend-deployment.yaml') }}"
+    
+    - name: Deploy Ingress
+      kubernetes.core.k8s:
+        state: present
+        definition: "{{ lookup('file', '../k8s/ingress.yaml') }}"
+    
+    - name: Get deployment status
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: healthcare
+      register: deployments
+    
+    - name: Display deployment status
+      debug:
+        msg: "{{ item.metadata.name }}: {{ item.status.replicas }}/{{ item.status.availableReplicas | default(0) }} replicas available"
+      loop: "{{ deployments.resources }}"
+      loop_control:
+        label: "{{ item.metadata.name }}"
+
+- name: Setup Monitoring
+  hosts: monitoring
+  gather_facts: yes
+  become: yes
+  
+  roles:
+    - monitoring
+
+- name: Post-deployment verification
+  hosts: master
+  gather_facts: no
+  become: yes
+  
+  tasks:
+    - name: Get all pods in healthcare namespace
+      kubernetes.core.k8s_info:
+        kind: Pod
+        namespace: healthcare
+      register: pods
+    
+    - name: Display pod status
+      debug:
+        msg: "{{ item.metadata.name }}: {{ item.status.phase }}"
+      loop: "{{ pods.resources }}"
+      loop_control:
+        label: "{{ item.metadata.name }}"
+    
+    - name: Get service endpoints
+      kubernetes.core.k8s_info:
+        kind: Service
+        namespace: healthcare
+      register: services
+    
+    - name: Display service information
+      debug:
+        msg: "Service {{ item.metadata.name }} is available at {{ item.spec.clusterIP }}:{{ item.spec.ports[0].port }}"
+      loop: "{{ services.resources }}"
+      loop_control:
+        label: "{{ item.metadata.name }}"
+

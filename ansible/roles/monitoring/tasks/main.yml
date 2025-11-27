@@ -1,0 +1,95 @@
+---
+# Setup monitoring stack (Prometheus + Grafana)
+- name: Create monitoring namespace
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: monitoring
+  delegate_to: "{{ groups['master'][0] }}"
+
+- name: Add Prometheus Helm repository
+  kubernetes.core.helm_repository:
+    name: prometheus-community
+    repo_url: https://prometheus-community.github.io/helm-charts
+  delegate_to: "{{ groups['master'][0] }}"
+
+- name: Add Grafana Helm repository
+  kubernetes.core.helm_repository:
+    name: grafana
+    repo_url: https://grafana.github.io/helm-charts
+  delegate_to: "{{ groups['master'][0] }}"
+
+- name: Install Prometheus using Helm
+  kubernetes.core.helm:
+    name: prometheus
+    chart_ref: prometheus-community/kube-prometheus-stack
+    release_namespace: monitoring
+    create_namespace: yes
+    values:
+      prometheus:
+        prometheusSpec:
+          retention: 30d
+          storageSpec:
+            volumeClaimTemplate:
+              spec:
+                accessModes: ["ReadWriteOnce"]
+                resources:
+                  requests:
+                    storage: 50Gi
+      grafana:
+        adminPassword: admin123
+        persistence:
+          enabled: true
+          size: 10Gi
+        ingress:
+          enabled: true
+          hosts:
+            - grafana.healthcare.local
+  delegate_to: "{{ groups['master'][0] }}"
+
+- name: Create ServiceMonitor for backend
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: monitoring.coreos.com/v1
+      kind: ServiceMonitor
+      metadata:
+        name: backend-monitor
+        namespace: healthcare
+        labels:
+          app: backend
+      spec:
+        selector:
+          matchLabels:
+            app: backend
+        endpoints:
+          - port: http
+            path: /actuator/prometheus
+            interval: 30s
+  delegate_to: "{{ groups['master'][0] }}"
+
+- name: Install Loki for logging
+  kubernetes.core.helm:
+    name: loki
+    chart_ref: grafana/loki-stack
+    release_namespace: monitoring
+    values:
+      loki:
+        persistence:
+          enabled: true
+          size: 10Gi
+      promtail:
+        enabled: true
+  delegate_to: "{{ groups['master'][0] }}"
+
+- name: Display monitoring access information
+  debug:
+    msg:
+      - "Grafana URL: http://grafana.healthcare.local"
+      - "Grafana Username: admin"
+      - "Grafana Password: admin123"
+      - "Prometheus URL: http://prometheus.healthcare.local"
+

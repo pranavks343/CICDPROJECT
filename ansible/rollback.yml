@@ -1,0 +1,51 @@
+---
+# Rollback playbook
+- name: Rollback Healthcare System Deployment
+  hosts: master
+  gather_facts: no
+  become: yes
+  
+  vars_prompt:
+    - name: revision
+      prompt: "Enter revision number to rollback to (or leave empty for previous)"
+      private: no
+      default: ""
+  
+  tasks:
+    - name: Rollback backend deployment
+      command: >
+        kubectl rollout undo deployment/backend-deployment -n healthcare
+        {% if revision %} --to-revision={{ revision }}{% endif %}
+      register: backend_rollback
+    
+    - name: Display backend rollback result
+      debug:
+        var: backend_rollback.stdout_lines
+    
+    - name: Rollback frontend deployment
+      command: >
+        kubectl rollout undo deployment/frontend-deployment -n healthcare
+        {% if revision %} --to-revision={{ revision }}{% endif %}
+      register: frontend_rollback
+    
+    - name: Display frontend rollback result
+      debug:
+        var: frontend_rollback.stdout_lines
+    
+    - name: Wait for backend rollback
+      command: kubectl rollout status deployment/backend-deployment -n healthcare
+    
+    - name: Wait for frontend rollback
+      command: kubectl rollout status deployment/frontend-deployment -n healthcare
+    
+    - name: Verify rollback
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: healthcare
+      register: deployments
+    
+    - name: Display deployment status after rollback
+      debug:
+        msg: "{{ item.metadata.name }}: {{ item.status.availableReplicas | default(0) }}/{{ item.spec.replicas }} replicas available"
+      loop: "{{ deployments.resources }}"
+

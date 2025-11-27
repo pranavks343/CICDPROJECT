@@ -1,0 +1,12 @@
+---
+# Handlers for common role
+- name: restart docker
+  systemd:
+    name: docker
+    state: restarted
+
+- name: restart containerd
+  systemd:
+    name: containerd
+    state: restarted
+

@@ -1,0 +1,67 @@
+---
+# Quick deployment playbook
+- name: Quick Deploy Healthcare System
+  hosts: master
+  gather_facts: no
+  become: yes
+  
+  vars:
+    docker_username: "{{ lookup('env', 'DOCKER_HUB_USERNAME') }}"
+    image_tag: "{{ lookup('env', 'IMAGE_TAG') | default('latest', true) }}"
+  
+  tasks:
+    - name: Update backend deployment image
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: backend-deployment
+            namespace: healthcare
+          spec:
+            template:
+              spec:
+                containers:
+                - name: backend
+                  image: "{{ docker_username }}/healthcare-backend:{{ image_tag }}"
+    
+    - name: Update frontend deployment image
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: frontend-deployment
+            namespace: healthcare
+          spec:
+            template:
+              spec:
+                containers:
+                - name: frontend
+                  image: "{{ docker_username }}/healthcare-frontend:{{ image_tag }}"
+    
+    - name: Restart backend deployment
+      command: kubectl rollout restart deployment/backend-deployment -n healthcare
+    
+    - name: Restart frontend deployment
+      command: kubectl rollout restart deployment/frontend-deployment -n healthcare
+    
+    - name: Wait for backend rollout
+      command: kubectl rollout status deployment/backend-deployment -n healthcare
+    
+    - name: Wait for frontend rollout
+      command: kubectl rollout status deployment/frontend-deployment -n healthcare
+    
+    - name: Get deployment status
+      kubernetes.core.k8s_info:
+        kind: Deployment
+        namespace: healthcare
+      register: deployments
+    
+    - name: Display deployment status
+      debug:
+        msg: "{{ item.metadata.name }}: {{ item.status.availableReplicas | default(0) }}/{{ item.spec.replicas }} replicas available"
+      loop: "{{ deployments.resources }}"
+

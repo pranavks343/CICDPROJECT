@@ -1,0 +1,36 @@
+---
+all:
+  vars:
+    ansible_user: ubuntu
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_ssh_private_key_file: ~/.ssh/id_rsa
+    
+  children:
+    kubernetes:
+      children:
+        master:
+          hosts:
+            k8s-master:
+              ansible_host: 192.168.1.10
+              node_role: master
+        
+        workers:
+          hosts:
+            k8s-worker-1:
+              ansible_host: 192.168.1.11
+              node_role: worker
+            
+            k8s-worker-2:
+              ansible_host: 192.168.1.12
+              node_role: worker
+    
+    monitoring:
+      hosts:
+        monitoring-server:
+          ansible_host: 192.168.1.20
+    
+    application:
+      hosts:
+        app-server:
+          ansible_host: 192.168.1.30
+
