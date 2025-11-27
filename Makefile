@@ -3,7 +3,7 @@
 .PHONY: help build test docker-build docker-push k8s-deploy k8s-delete ansible-deploy clean
 
 # Variables
-DOCKER_USERNAME ?= your_docker_username
+DOCKER_USERNAME ?= pranavks28
 BACKEND_IMAGE = $(DOCKER_USERNAME)/healthcare-backend
 FRONTEND_IMAGE = $(DOCKER_USERNAME)/healthcare-frontend
 TAG ?= latest

@@ -187,10 +187,8 @@ jobs:
     - name: Deploy to Kubernetes
       run: |
         # Update image tags in deployment files
-        sed -i "s|IMAGE_TAG|${{ github.sha }}|g" k8s/backend-deployment.yaml
-        sed -i "s|IMAGE_TAG|${{ github.sha }}|g" k8s/frontend-deployment.yaml
-        sed -i "s|DOCKER_HUB_USERNAME|${{ secrets.DOCKER_HUB_USERNAME }}|g" k8s/backend-deployment.yaml
-        sed -i "s|DOCKER_HUB_USERNAME|${{ secrets.DOCKER_HUB_USERNAME }}|g" k8s/frontend-deployment.yaml
+        sed -i "s|pranavks28/healthcare-backend:latest|pranavks28/healthcare-backend:${{ github.sha }}|g" k8s/backend-deployment.yaml
+        sed -i "s|pranavks28/healthcare-frontend:latest|pranavks28/healthcare-frontend:${{ github.sha }}|g" k8s/frontend-deployment.yaml
         
         # Apply Kubernetes manifests
         kubectl apply -f k8s/namespace.yaml
