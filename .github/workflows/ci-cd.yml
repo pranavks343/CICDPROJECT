@@ -99,15 +99,18 @@ jobs:
         username: pranavks28
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
     
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.DOCKER_HUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}
-        tags: |
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=ref,event=branch
+    - name: Set image tags
+      id: tags
+      run: |
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7 | tr -d '[:space:]')
+        BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | sed 's/\//-/g' | tr -d '[:space:]')
+        IMAGE_BASE="${{ env.DOCKER_HUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}"
+        TAG_BRANCH="${IMAGE_BASE}:${BRANCH_NAME}"
+        TAG_LATEST="${IMAGE_BASE}:latest"
+        TAG_SHA="${IMAGE_BASE}:${BRANCH_NAME}-${SHORT_SHA}"
+        echo "tags=${TAG_BRANCH},${TAG_LATEST},${TAG_SHA}" >> $GITHUB_OUTPUT
+        echo "branch=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+        echo "sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
     
     - name: Build and push backend
       uses: docker/build-push-action@v5
@@ -115,8 +118,7 @@ jobs:
         context: ./backend
         file: ./backend/Dockerfile
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: ${{ steps.tags.outputs.tags }}
         cache-from: type=registry,ref=${{ env.DOCKER_HUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache
         cache-to: type=registry,ref=${{ env.DOCKER_HUB_USERNAME }}/${{ env.BACKEND_IMAGE_NAME }}:buildcache,mode=max
         platforms: linux/amd64,linux/arm64
@@ -141,15 +143,18 @@ jobs:
         username: pranavks28
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
     
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.DOCKER_HUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}
-        tags: |
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=ref,event=branch
+    - name: Set image tags
+      id: tags
+      run: |
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7 | tr -d '[:space:]')
+        BRANCH_NAME=$(echo "${GITHUB_REF#refs/heads/}" | sed 's/\//-/g' | tr -d '[:space:]')
+        IMAGE_BASE="${{ env.DOCKER_HUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}"
+        TAG_BRANCH="${IMAGE_BASE}:${BRANCH_NAME}"
+        TAG_LATEST="${IMAGE_BASE}:latest"
+        TAG_SHA="${IMAGE_BASE}:${BRANCH_NAME}-${SHORT_SHA}"
+        echo "tags=${TAG_BRANCH},${TAG_LATEST},${TAG_SHA}" >> $GITHUB_OUTPUT
+        echo "branch=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+        echo "sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
     
     - name: Build and push frontend
       uses: docker/build-push-action@v5
@@ -157,8 +162,7 @@ jobs:
         context: ./frontend
         file: ./frontend/Dockerfile
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: ${{ steps.tags.outputs.tags }}
         cache-from: type=registry,ref=${{ env.DOCKER_HUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache
         cache-to: type=registry,ref=${{ env.DOCKER_HUB_USERNAME }}/${{ env.FRONTEND_IMAGE_NAME }}:buildcache,mode=max
         platforms: linux/amd64,linux/arm64
@@ -186,9 +190,12 @@ jobs:
     
     - name: Deploy to Kubernetes
       run: |
-        # Update image tags in deployment files
-        sed -i "s|pranavks28/healthcare-backend:latest|pranavks28/healthcare-backend:${{ github.sha }}|g" k8s/backend-deployment.yaml
-        sed -i "s|pranavks28/healthcare-frontend:latest|pranavks28/healthcare-frontend:${{ github.sha }}|g" k8s/frontend-deployment.yaml
+        # Extract short SHA
+        SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+        
+        # Update image tags in deployment files to use branch-sha format
+        sed -i "s|pranavks28/healthcare-backend:latest|pranavks28/healthcare-backend:main-${SHORT_SHA}|g" k8s/backend-deployment.yaml
+        sed -i "s|pranavks28/healthcare-frontend:latest|pranavks28/healthcare-frontend:main-${SHORT_SHA}|g" k8s/frontend-deployment.yaml
         
         # Apply Kubernetes manifests
         kubectl apply -f k8s/namespace.yaml
