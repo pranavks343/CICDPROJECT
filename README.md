@@ -423,3 +423,4 @@ make build
 
 This project is for educational purposes as part of a CI/CD demonstration.
 
+# Trigger new pipeline with fixed workflow
