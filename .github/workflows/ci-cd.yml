@@ -161,9 +161,9 @@ jobs:
     
     - name: Deploy to Kubernetes
       run: |
-        # Update image tags in deployment files to use branch-sha format
-        sed -i "s|pranavks28/healthcare-backend:latest|pranavks28/healthcare-backend:main-${{ github.sha }}|g" k8s/backend-deployment.yaml
-        sed -i "s|pranavks28/healthcare-frontend:latest|pranavks28/healthcare-frontend:main-${{ github.sha }}|g" k8s/frontend-deployment.yaml
+        # Update image tags in deployment files to use branch-sha format (macOS/BSD sed needs an explicit backup suffix)
+        sed -i '' "s|pranavks28/healthcare-backend:latest|pranavks28/healthcare-backend:main-${{ github.sha }}|g" k8s/backend-deployment.yaml
+        sed -i '' "s|pranavks28/healthcare-frontend:latest|pranavks28/healthcare-frontend:main-${{ github.sha }}|g" k8s/frontend-deployment.yaml
         
         # Apply Kubernetes manifests
         kubectl apply -f k8s/namespace.yaml
