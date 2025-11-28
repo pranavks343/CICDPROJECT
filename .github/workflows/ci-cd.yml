@@ -144,8 +144,10 @@ jobs:
   # Deploy to Kubernetes
   deploy-kubernetes:
     name: Deploy to Kubernetes
-    runs-on: ubuntu-latest
+    # Runs on your self-hosted runner (your Mac) so it can talk to Minikube.
+    runs-on: self-hosted
     needs: [build-push-backend, build-push-frontend]
+    # Triggered only on pushes to main.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
@@ -156,11 +158,6 @@ jobs:
       uses: azure/setup-kubectl@v3
       with:
         version: 'latest'
-    
-    - name: Configure kubectl
-      run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
     
     - name: Deploy to Kubernetes
       run: |
@@ -187,7 +184,8 @@ jobs:
   # Run Ansible Playbook
   ansible-automation:
     name: Run Ansible Automation
-    runs-on: ubuntu-latest
+    # Also runs on your self-hosted runner.
+    runs-on: self-hosted
     needs: deploy-kubernetes
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
