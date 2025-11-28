@@ -159,6 +159,45 @@ jobs:
       with:
         version: 'latest'
     
+    - name: Create Kubernetes Secrets
+      run: |
+        # Create secrets from GitHub Secrets (not tracked in Git for security)
+        cat <<EOF > k8s/secrets.yaml
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: backend-secrets
+          namespace: healthcare
+        type: Opaque
+        stringData:
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        ---
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: postgres-secrets
+          namespace: healthcare
+        type: Opaque
+        stringData:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        ---
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: mysql-secrets
+          namespace: healthcare
+        type: Opaque
+        stringData:
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        EOF
+    
     - name: Deploy to Kubernetes
       run: |
         # Update image tags in deployment files to use branch-sha format (macOS/BSD sed needs an explicit backup suffix)
